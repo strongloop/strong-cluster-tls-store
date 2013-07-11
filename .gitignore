@@ -12,3 +12,7 @@ logs
 results
 
 npm-debug.log
+
+strong-cluster-tls-store-*.tgz
+coverage.html
+node_modules
