@@ -1,13 +1,11 @@
 // based on node's benchmark/tls/tls-connect.js
 
-var assert = require('assert');
-var execFile = require('child_process').execFile;
 var cluster = require('cluster');
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var tls = require('tls');
-var ClusterStore = require('..');
+var shareTlsSessions = require('..');
 
 var certDir = path.resolve(__dirname, '../test/cert');
 var serverConn = 0;
@@ -124,7 +122,7 @@ function worker() {
 
   server = tls.createServer(options, onConnection);
   if (process.env.REUSE_SESSIONS === 'true') {
-    new ClusterStore().intercept(server);
+    shareTlsSessions(server);
   }
   server.listen(0);
 }

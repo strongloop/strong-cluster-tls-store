@@ -4,9 +4,12 @@ var net = require('net');
 var tls = require('tls');
 var exec = require('child_process').exec;
 var expect = require('chai').expect;
-var ClusterStore = require('..');
+var shareTlsSessions = require('..');
 
 var workerPort;
+
+// verify we can call setup in master and workers
+shareTlsSessions.setup();
 
 if (cluster.isWorker) {
   startTlsServer();
@@ -53,7 +56,6 @@ function setupWorkers(done) {
   }
 
   cluster.setupMaster({ exec: __filename });
-  ClusterStore.setup();
 
   var workersListening = 0;
   cluster.on('listening', function(w, addr) {
@@ -87,6 +89,6 @@ function startTlsServer() {
     cleartextStream.write('hello\n');
     cleartextStream.end();
   });
-  new ClusterStore().intercept(server);
+  shareTlsSessions(server);
   server.listen(PORT);
 }
