@@ -86,6 +86,16 @@ if (cluster.isMaster) {
 }
 ```
 
+### Multiple servers
+
+To configure session sharing for multiple TLS/HTTPS servers, you have to
+assign a unique namespace to each server.
+
+```javascript
+shareTlsSessions(server1, 'server1');
+shareTlsSessions(server2, 'server2');
+```
+
 ### Setting up the master process
 
 The store requires that a shared-state server is running in the master process.

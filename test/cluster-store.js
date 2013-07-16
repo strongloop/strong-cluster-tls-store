@@ -2,6 +2,7 @@ var cluster = require('cluster');
 var fs = require('fs');
 var net = require('net');
 var tls = require('tls');
+var EventEmmiter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var expect = require('chai').expect;
 var shareTlsSessions = require('..');
@@ -41,6 +42,43 @@ describe('clustered TLS server', function() {
       done();
     });
   });
+});
+
+describe('ClusterStore', function() {
+  var tls1, tls2;
+  var ID = new Buffer('id', 'binary');
+  var DATA = new Buffer('data', 'binary');
+
+  before(createTlsMocks);
+
+  it('creates an unique store per TLS server', function(done) {
+    shareTlsSessions(tls1, 'a-first-namespace');
+    shareTlsSessions(tls2, 'a-second-namespace');
+
+    tls1.emit('newSession', ID, DATA);
+    tls2.emit('resumeSession', ID, function(err, data) {
+      expect(err, 'err').to.equal(null);
+      expect(data, 'data').to.equal(null);
+      done();
+    });
+  });
+
+  it('throws when two servers share the same default namespace', function(done) {
+    shareTlsSessions(tls1);
+    expect(shareTlsSessions.bind(null, tls2)).to.throw();
+    done();
+  });
+
+  it('throws when two servers share the same explicit namespace', function(done) {
+    shareTlsSessions(tls1, 'a-namespace');
+    expect(shareTlsSessions.bind(null, tls2, 'a-namespace')).to.throw();
+    done();
+  });
+
+  function createTlsMocks() {
+    tls1 = new EventEmmiter();
+    tls2 = new EventEmmiter();
+  }
 });
 
 var WORKER_COUNT = 2;
