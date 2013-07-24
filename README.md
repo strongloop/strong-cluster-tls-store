@@ -9,10 +9,16 @@ Strong-cluster-tls-store is an implementation of TLS session store
 using node's native cluster messaging. It provides an easy solution
 for improving performance of node's TLS/HTTPS server running in a cluster.
 
-### Features
+The performance of your HTTPS/TLS cluster depends on many factors:
+* node.js version (significant improvements were implemented to both TLS and
+cluster modules in v0.11)
+* platform (windows/linux/etc.)
+* whether your clients support TLS session tickets extension
+* how often the same HTTPS connection is reused for multiple requests
 
-- No dependencies on external services.
-- Speeds up the TLS handshake by 15% to 55% on Unix systems.
+You should therefore monitor the performance of you application and
+find out yourself how much extra speed is gained in your specific
+scenario (if any at all).
 
 ## Usage
 
@@ -118,31 +124,34 @@ require('strong-cluster-tls-store').setup();
 // etc.
 ```
 
-## Benchmarking
+## Setting up the client
 
-The module comes with a simple benchmark that measures how many TLS connections
-can be opened per second.
+TLS session resumption requires also a correct client configuration.
+With node.js TLS client, you have to set `opts.session` when creating
+a new TLS connection.
 
-### Running the benchmark
-```Shell
-$ npm run benchmark
+```javascript
+var tls = require('tls');
+
+var opts = {
+  port: 4433,
+  host: 'localhost'
+};
+
+var session;
+
+var conn1 = tls.connect(opts, function() {
+  // save the TLS session
+  session = conn1.getSession();
+
+  // talk to the other side, etc.
+});
+
+opts.session = session;
+var conn2 = tls.connect(opts, function() {
+  // talk to the other side, etc.
+});
 ```
 
-### Understanding the results
-
-The benchmark runs multiple time with different configuration.
-
-* concurrency: number of TLS connections to run in parallel.
-* reuse: whether session sharing is enabled.
-* dur: number of seconds to run the test.
-
-The result is the average number of connections opened per second. The higher
-number is better.
-
-Example output:
-```
-tls-connect.js concurrency=1 reuse=false dur=5: 562.43
-tls-connect.js concurrency=1 reuse=true dur=5: 874.12
-tls-connect.js concurrency=10 reuse=false dur=5: 1020.8
-tls-connect.js concurrency=10 reuse=true dur=5: 1186.9
-```
+Unfortunately HTTPS module does not support TLS session resumption as of
+24-July-2013.
