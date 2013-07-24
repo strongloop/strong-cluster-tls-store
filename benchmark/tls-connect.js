@@ -1,92 +1,96 @@
 // based on node's benchmark/tls/tls-connect.js
 
-var cluster = require('cluster');
+var fork = require('child_process').fork;
 var fs = require('fs');
-var os = require('os');
 var path = require('path');
 var tls = require('tls');
-var shareTlsSessions = require('..');
+var os = require('os');
+
+var debug = require('debug')('benchmark');
+
+var common = require('./common.js');
+var bench = common.createBenchmark(main, {
+  cluster: [os.cpus().length-1], // use false to disable cluster
+  concurrency: [10],
+  proto: ['default', 'SSLv3_method' ],
+  ciphers: ['default'],
+  share: [false, true],
+  dur: [30],
+  run: [1, 2, 3] // repeat to visualise volatility
+});
 
 var certDir = path.resolve(__dirname, '../test/cert');
-var serverConn = 0;
 
-if (cluster.isMaster) {
-  master();
-} else {
-  worker();
-}
+var clientConn = 0;
+var workerConn = [];
+var running = true;
+var server;
+var port;
 
-function master() {
-  var common = require('./common.js');
-  var bench = common.createBenchmark(main, {
-    concurrency: [1, 10],
-    reuse: [false, true],
-    dur: [5]
+function main(conf) {
+  var args = [];
+  if (conf.cluster !== 'false') args.push('-cluster=' + conf.cluster);
+  if (conf.share === 'true') args.push('-share');
+  if (conf.ciphers !== 'default') args.push('-ciphers=' + conf.ciphers);
+
+  debug('forking server', args);
+  server = fork('server.js', args);
+  server.on('message', function(msg) {
+    debug('message from server', msg);
+    if (msg.event == 'LISTENING') {
+      port = msg.port;
+      onServerListening();
+    }
   });
 
-  var WORKER_COUNT = os.cpus().length;
-  var clientConn = 0;
-  var workerConn = [];
-  var port;
-  var dur;
-  var concurrency;
-  var running = true;
-  var workersListening = 0;
-
-  function main(conf) {
-    dur = +conf.dur;
-    concurrency = +conf.concurrency;
-
-    cluster.on('listening', onWorkerListening);
-    for (var i = 0; i < WORKER_COUNT; i++)
-      cluster.fork({ REUSE_SESSIONS: conf.reuse });
-  }
-
-  function onWorkerListening(w, addr) {
-    workersListening++;
-    if (workersListening < WORKER_COUNT) return;
-
-    port = addr.port;
-    setTimeout(stop, dur * 1000);
+  function onServerListening() {
+    debug('server is listening on port %d', port);
+    debug('starting the benchmark...');
+    setTimeout(stop, conf.dur * 1000);
     bench.start();
-    for (var i = 0; i < concurrency; i++)
-      makeConnection();
+
+    for (var i = 0; i < conf.concurrency; i++)
+      makeConnection(conf);
   }
 
-  function makeConnection(session) {
-    var opts = {
-      port: port,
+  function makeConnection(conf, session) {
+    var opts = { port: port,
       ca: [ fs.readFileSync(certDir + '/test_ca.pem') ],
-      // NOTE: The default protocol (TLSv1) does not reuse sessions
-      secureProtocol: 'SSLv3_method',
       session: session
     };
+
+    if (conf.proto !== 'default') {
+      opts.secureProtocol = conf.proto;
+    }
+
+    if (conf.ciphers !== 'default') opts.ciphers = conf.ciphers;
     var conn = tls.connect(opts, function() {
       clientConn++;
-      conn.on('error', function(er) {
-        console.error('client error', er);
-        throw er;
+      conn.end('GET / HTTP/1.0\r\n\r\n', function() {
+        if (running) makeConnection(conf, conn.getSession());
+        else debug('session was reused', conn.isSessionReused());
       });
-      conn.end();
-      if (running) makeConnection(conn.getSession());
+    });
+
+    conn.on('error', function(er) {
+      console.error('client error', er);
+      if (er.syscall != 'connect') conn.end();
+      if (running) makeConnection(conf, session);
     });
   }
 
   function stop() {
+    debug('... the benchmark is over');
     running = false;
 
-    for (var id in cluster.workers) {
-      var w = cluster.workers[id];
-      w.on('message', onMessage);
-      w.send({ cmd: 'REPORT' });
-    }
+    server.on('message', onMessage);
+    server.send({ cmd: 'REPORT' });
 
     function onMessage(data) {
       if (data.cmd !== 'REPORT') return;
-      workerConn.push(data.serverConn);
-      serverConn += data.serverConn;
-      if (workerConn.length == WORKER_COUNT)
-        done();
+      workerConn = data.workerConn;
+      serverConn = data.serverConn;
+      done();
     }
   }
 
@@ -95,34 +99,8 @@ function master() {
     // because we destroy the server somewhat abruptly, these
     // don't always match.  Generally, serverConn will be
     // the smaller number, but take the min just to be sure.
+    debug('Connection distribution per workers:', workerConn);
     bench.end(Math.min(serverConn, clientConn));
-    // console.log('Connection distribution per workers:', workerConn);
+    server.kill();
   }
-}
-
-function worker() {
-  function onConnection(conn) {
-    serverConn++;
-    conn.end();
-  }
-
-  function report() {
-    process.send({ cmd: 'REPORT', serverConn: serverConn });
-  }
-
-  process.on('message', function(data) {
-    if (data.cmd === 'REPORT') report();
-  });
-
-  var options = {
-    key: fs.readFileSync(certDir + '/test_key.pem'),
-    cert: fs.readFileSync(certDir + '/test_cert.pem'),
-    ca: [ fs.readFileSync(certDir + '/test_ca.pem') ]
-  };
-
-  server = tls.createServer(options, onConnection);
-  if (process.env.REUSE_SESSIONS === 'true') {
-    shareTlsSessions(server);
-  }
-  server.listen(0);
 }
