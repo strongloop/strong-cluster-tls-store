@@ -24,9 +24,8 @@ describe('clustered TLS server', function() {
   it('shares sessions between workers', function(done) {
     var TEST_COMMAND = 'openssl s_client' +
       ' -connect localhost:' + workerPort  +
-      ' -reconnect -no_tls1';
-      // Disable TLS1 because it's implementation in openssl 0.9.8
-      // (OSX's default) is not compatible with the one in node 0.10+
+      ' -reconnect -no_ticket';
+      // Disable session tickets to force the server to find the session by id
 
     exec(TEST_COMMAND, function(err, stdout, stderr) {
       if (err) done(err);
