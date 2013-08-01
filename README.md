@@ -11,15 +11,15 @@ for improving performance of node's TLS/HTTPS server running in a cluster.
 
 The performance of your HTTPS/TLS cluster depends on many factors:
 * Node.js version (significant improvements were implemented to both TLS and
-cluster modules in v0.11)
+  cluster modules in v0.11)
 * platform (windows/linux/etc.)
-* whether your clients support SessionTicket TLS extension (RFC5077)
+* whether your clients support the SessionTicket TLS extension (RFC5077)
 * how often the same HTTPS connection is reused for multiple requests
 
 You should therefore monitor the performance of your application and
 find out yourself how much extra speed is gained in your specific
 scenario (if any at all).
-Check out our product [StrongOps](http://nodefly.com) (former NodeFly)
+Check out our product [StrongOps](http://nodefly.com) (formerly NodeFly)
 if you are looking for a great performance monitoring tool.
 
 ## Usage
@@ -128,9 +128,12 @@ require('strong-cluster-tls-store').setup();
 
 ## Setting up the client
 
-TLS session resumption will not occur without client configuration. With the
-Node.js client, session data from a successful connection must be explicitly
-copied to `opts.session` when making a new connection.
+TLS session resumption may not occur without client configuration.
+For non-Node clients it is case-by-case. For example, many browsers attempt
+session resumption by default.
+
+With the Node.js client, session data from a successful connection must be
+explicitly copied to `opts.session` when making a new connection.
 
 ```javascript
 var tls = require('tls');
