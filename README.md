@@ -9,10 +9,18 @@ Strong-cluster-tls-store is an implementation of TLS session store
 using node's native cluster messaging. It provides an easy solution
 for improving performance of node's TLS/HTTPS server running in a cluster.
 
-### Features
+The performance of your HTTPS/TLS cluster depends on many factors:
+* Node.js version (significant improvements were implemented to both TLS and
+  cluster modules in v0.11)
+* platform (windows/linux/etc.)
+* whether your clients support the SessionTicket TLS extension (RFC5077)
+* how often the same HTTPS connection is reused for multiple requests
 
-- No dependencies on external services.
-- Speeds up the TLS handshake by 15% to 55% on Unix systems.
+You should therefore monitor the performance of your application and
+find out yourself how much extra speed is gained in your specific
+scenario (if any at all).
+Check out our product [StrongOps](http://nodefly.com) (formerly NodeFly)
+if you are looking for a great performance monitoring tool.
 
 ## Usage
 
@@ -118,31 +126,35 @@ require('strong-cluster-tls-store').setup();
 // etc.
 ```
 
-## Benchmarking
+## Setting up the client
 
-The module comes with a simple benchmark that measures how many TLS connections
-can be opened per second.
+TLS session resumption may not occur without client configuration.
+For non-Node clients it is case-by-case. For example, many browsers attempt
+session resumption by default.
 
-### Running the benchmark
-```Shell
-$ npm run benchmark
+With the Node.js client, session data from a successful connection must be
+explicitly copied to `opts.session` when making a new connection.
+
+```javascript
+var tls = require('tls');
+
+var opts = {
+  port: 4433,
+  host: 'localhost'
+};
+
+var initialConnection = tls.connect(opts, function() {
+  // save the TLS session
+  opts.session = this.getSession();
+
+  // talk to the other side, etc.
+});
+
+var resumedConnection = tls.connect(opts, function() {
+  // talk to the other side, etc.
+});
 ```
 
-### Understanding the results
-
-The benchmark runs multiple time with different configuration.
-
-* concurrency: number of TLS connections to run in parallel.
-* reuse: whether session sharing is enabled.
-* dur: number of seconds to run the test.
-
-The result is the average number of connections opened per second. The higher
-number is better.
-
-Example output:
-```
-tls-connect.js concurrency=1 reuse=false dur=5: 562.43
-tls-connect.js concurrency=1 reuse=true dur=5: 874.12
-tls-connect.js concurrency=10 reuse=false dur=5: 1020.8
-tls-connect.js concurrency=10 reuse=true dur=5: 1186.9
-```
+Unfortunately as of Node.js v0.10.15 and v0.11.4, the HTTPS client does
+reuse TLS sessions by default and the API does not provide an easy way 
+how to enable it manually.
