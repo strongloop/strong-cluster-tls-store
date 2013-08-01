@@ -10,15 +10,17 @@ using node's native cluster messaging. It provides an easy solution
 for improving performance of node's TLS/HTTPS server running in a cluster.
 
 The performance of your HTTPS/TLS cluster depends on many factors:
-* node.js version (significant improvements were implemented to both TLS and
+* Node.js version (significant improvements were implemented to both TLS and
 cluster modules in v0.11)
 * platform (windows/linux/etc.)
-* whether your clients support TLS session tickets extension
+* whether your clients support SessionTicket TLS extension (RFC5077)
 * how often the same HTTPS connection is reused for multiple requests
 
-You should therefore monitor the performance of you application and
+You should therefore monitor the performance of your application and
 find out yourself how much extra speed is gained in your specific
 scenario (if any at all).
+Check out our product [StrongOps](http://nodefly.com) (former NodeFly)
+if you are looking for a great performance monitoring tool.
 
 ## Usage
 
@@ -126,9 +128,9 @@ require('strong-cluster-tls-store').setup();
 
 ## Setting up the client
 
-TLS session resumption requires also a correct client configuration.
-With node.js TLS client, you have to set `opts.session` when creating
-a new TLS connection.
+TLS session resumption will not occur without client configuration. With the
+Node.js client, session data from a successful connection must be explicitly
+copied to `opts.session` when making a new connection.
 
 ```javascript
 var tls = require('tls');
@@ -138,20 +140,18 @@ var opts = {
   host: 'localhost'
 };
 
-var session;
-
-var conn1 = tls.connect(opts, function() {
+var initialConnection = tls.connect(opts, function() {
   // save the TLS session
-  session = conn1.getSession();
+  opts.session = this.getSession();
 
   // talk to the other side, etc.
 });
 
-opts.session = session;
-var conn2 = tls.connect(opts, function() {
+var resumedConnection = tls.connect(opts, function() {
   // talk to the other side, etc.
 });
 ```
 
-Unfortunately HTTPS module does not support TLS session resumption as of
-24-July-2013.
+Unfortunately as of Node.js v0.10.15 and v0.11.4, the HTTPS client does
+reuse TLS sessions by default and the API does not provide an easy way 
+how to enable it manually.
