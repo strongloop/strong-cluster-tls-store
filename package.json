@@ -1,6 +1,6 @@
 {
   "name": "strong-cluster-tls-store",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Implementation of TLS session store using node's native cluster messaging",
   "license": "MIT",
   "main": "index.js",
