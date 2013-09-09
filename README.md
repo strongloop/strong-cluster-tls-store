@@ -48,7 +48,7 @@ if (cluster.isMaster) {
 }
 ```
 
-### Configuration - HTTPS server
+### Configuration - HTTPS Server
 
 `https.Server` implements the interface of `tls.Server`,
 the code to configure session sharing is the same.
@@ -95,7 +95,7 @@ if (cluster.isMaster) {
 }
 ```
 
-### Multiple servers
+### Multiple Servers
 
 To configure session sharing for multiple TLS/HTTPS servers, you have to
 assign a unique namespace to each server.
@@ -105,7 +105,7 @@ shareTlsSessions(server1, 'server1');
 shareTlsSessions(server2, 'server2');
 ```
 
-### Setting up the master process
+### Setting Up the Master Process
 
 The store requires that a shared-state server is running in the master process.
 The server is initialized automatically when you require() this module
@@ -127,7 +127,7 @@ require('strong-cluster-tls-store').setup();
 // etc.
 ```
 
-## Setting up the client
+### Setting Up the Client
 
 TLS session resumption may not occur without client configuration.
 For non-Node clients it is case-by-case. For example, many browsers attempt
