@@ -12,4 +12,4 @@ Installation:
 $ npm install strong-cluster-tls-store
 ```
 
-Please see the [official documentation](http://docs.strongloop.com/display/DOC/Strong+Cluster+TLS+Store).
+Please see the [official documentation](http://docs.strongloop.com/display/SOPS/Strong+Cluster+TLS+Store).
