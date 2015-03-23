@@ -1,6 +1,6 @@
 {
   "name": "strong-cluster-tls-store",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Implementation of TLS session store using node's native cluster messaging",
   "license": {
     "name": "Dual MIT/StrongLoop",
