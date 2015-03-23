@@ -1,4 +1,5 @@
 var cluster = require('cluster');
+var debug = require('debug')('strong-tls-cluster-store:test');
 var fs = require('fs');
 var net = require('net');
 var tls = require('tls');
@@ -13,6 +14,7 @@ var workerPort;
 shareTlsSessions.setup();
 
 if (cluster.isWorker) {
+  debug('start tls server in worker');
   startTlsServer();
   return;
 }
@@ -121,11 +123,20 @@ function startTlsServer() {
     ca: [fs.readFileSync(require.resolve('./cert/test_ca.pem'))]
   };
   var server = tls.createServer(options, function(cleartextStream) {
-    cleartextStream.on('error', function(err) { /* ignore errors */ });
+    debug('new secureConnection');
+    cleartextStream.on('error', function(err) {
+      debug('ignore:', err);
+    });
     cleartextStream.setEncoding('utf8');
     cleartextStream.write('hello\n');
     cleartextStream.end();
   });
   shareTlsSessions(server);
   server.listen(PORT);
+  server.on('error', function(er) {
+    debug('server error:', er);
+  });
+  server.on('connection', function() {
+    debug('new connection');
+  });
 }
