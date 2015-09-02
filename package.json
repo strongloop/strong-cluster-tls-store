@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Implementation of TLS session store using node's native cluster messaging",
   "license": {
-    "name": "Dual MIT/StrongLoop",
+    "name": "Dual Artistic-2.0/StrongLoop",
     "url": "https://github.com/strongloop/strong-cluster-tls-store/blob/master/LICENSE"
   },
   "main": "index.js",
