@@ -2,10 +2,7 @@
   "name": "strong-cluster-tls-store",
   "version": "1.0.0",
   "description": "Implementation of TLS session store using node's native cluster messaging",
-  "license": {
-    "name": "Dual Artistic-2.0/StrongLoop",
-    "url": "https://github.com/strongloop/strong-cluster-tls-store/blob/master/LICENSE"
-  },
+  "license": "Artistic-2.0",
   "main": "index.js",
   "scripts": {
     "blanket": {
