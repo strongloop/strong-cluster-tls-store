@@ -1,3 +1,11 @@
+2015-10-01, Version 1.0.1
+=========================
+
+ * Use strongloop conventions for licensing (Sam Roberts)
+
+ * package: make license property same as LICENSE.md (Sam Roberts)
+
+
 2015-03-23, Version 1.0.0
 =========================
 
