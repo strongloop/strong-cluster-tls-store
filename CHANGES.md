@@ -1,3 +1,11 @@
+2015-11-06, Version 1.0.2
+=========================
+
+ * Update strong-store-cluster peerdep to 1.x (Sam Roberts)
+
+ * Refer to licenses with a link (Sam Roberts)
+
+
 2015-10-01, Version 1.0.1
 =========================
 
