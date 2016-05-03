@@ -1,3 +1,8 @@
+// Copyright IBM Corp. 2013,2015. All Rights Reserved.
+// Node module: strong-cluster-tls-store
+// This file is licensed under the Artistic License 2.0.
+// License text available at https://opensource.org/licenses/Artistic-2.0
+
 var cluster = require('cluster');
 var debug = require('debug')('strong-tls-cluster-store:test');
 var fs = require('fs');
